@@ -13,6 +13,6 @@ typedef struct {
 } ComplexNumber;
 
 typedef struct {
-    ComplexNumber* c;
-    ComplexBounds** scenes;
+    ComplexNumber *c;
+    ComplexBounds **scenes;
 } ComplexScene;

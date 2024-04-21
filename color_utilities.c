@@ -29,7 +29,7 @@ void initialize_color_map() {
     black = get_int_from_color(0, 0, 0);
 }
 
- /**
+/**
      * Taken from https://stackoverflow.com/questions/16500656/which-color-gradient-is-used-to-color-mandelbrot-in-wikipedia
      * 
      */
