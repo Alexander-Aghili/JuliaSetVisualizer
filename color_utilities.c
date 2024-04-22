@@ -33,10 +33,32 @@ void initialize_color_map() {
      * Taken from https://stackoverflow.com/questions/16500656/which-color-gradient-is-used-to-color-mandelbrot-in-wikipedia
      * 
      */
-int getColor(int n) {
+int get_color(int n) {
     if (n < MAX_ITERATIONS && n > 0) {
         int i = n % 16;
         return color_map[i];
     }
     return black;
+}
+
+int color_point(double a, double b) {
+    double x = a;
+    double y = b;
+
+    int n = 0;
+    while (n < MAX_ITERATIONS) { 
+        double u = a*a - b*b;
+        double v = 2*a*b;
+
+        if (fabs(u+v) > THRESHOLD) {
+            break;
+        }
+
+        a = u + x;
+        b = v + y;
+
+        n++;
+    }
+
+    return n;
 }

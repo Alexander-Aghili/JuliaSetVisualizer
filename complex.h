@@ -1,4 +1,6 @@
 #pragma once
+#include "constants.h"
+#include "stdlib.h"
 
 typedef struct {
     double max_img;
@@ -15,4 +17,5 @@ typedef struct {
 typedef struct {
     ComplexNumber *c;
     ComplexBounds **scenes;
+    int num_scenes;
 } ComplexScene;

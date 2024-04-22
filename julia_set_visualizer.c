@@ -8,9 +8,16 @@
 #include "assert.h"
 
 ComplexScene *create_complex_scene(ComplexNumber *c, ComplexBounds *start, ComplexBounds *end);
+void generate_frames(ComplexScene *scene);
 
 int main(int argc, char **argv) {
     ComplexScene *scene = create_complex_scene(NULL, NULL, NULL);
+    for (int i = 0; i < scene->num_scenes; i++) {
+        ComplexBounds *bounds = scene->scenes[i];
+        fprintf(stderr, "%f %f %f %f\n", bounds->max_img, bounds->min_img, bounds->max_real,
+            bounds->min_real);
+    }
+    generate_frames(scene);
 }
 
 ComplexScene *create_complex_scene(ComplexNumber *c, ComplexBounds *start, ComplexBounds *end) {
@@ -46,16 +53,8 @@ ComplexScene *create_complex_scene(ComplexNumber *c, ComplexBounds *start, Compl
     double curr_max_real = start->max_real;
     double curr_min_real = start->min_real;
 
-    double min_difference
-        = NUM_FRAMES
-          * fmin(fabs(min_real_incr),
-              fmin(fabs(max_real_incr), fmin(fabs(max_img_incr), fabs(min_img_incr))));
-    double log_difference = log(min_difference);
-    double log_scale_factor = log(SCALE_FACTOR);
-    double log_divided = log_difference / log_scale_factor;
-    int bounds = (int) log_divided;
-    fprintf(stderr, "%f : %f : %f : %f : %d\n", min_difference, log_difference, log_scale_factor,
-        log_divided, bounds);
+    double min_difference = fmin(fabs(min_real_incr),
+        fmin(fabs(max_real_incr), fmin(fabs(max_img_incr), fabs(min_img_incr))));
 
     int num_bounds = (int) (log(min_difference) / (log(SCALE_FACTOR)));
 
@@ -78,6 +77,8 @@ ComplexScene *create_complex_scene(ComplexNumber *c, ComplexBounds *start, Compl
         curr_bounds->max_real = curr_max_real;
         curr_bounds->min_real = curr_min_real;
 
+        scene_bounds[i + 1] = curr_bounds;
+
         max_img_incr *= SCALE_FACTOR;
         min_img_incr *= SCALE_FACTOR;
         max_img_incr *= SCALE_FACTOR;
@@ -86,6 +87,31 @@ ComplexScene *create_complex_scene(ComplexNumber *c, ComplexBounds *start, Compl
     scene_bounds[num_bounds + 1] = end;
 
     scene->scenes = scene_bounds;
+    scene->num_scenes = num_bounds + 2;
 
     return scene;
+}
+
+double screen_map(
+    double input_num, double min_input, double max_input, double min_output, double max_output) {
+    return (input_num - min_input) * (max_output - min_output) / (max_input - min_input)
+           + min_output;
+}
+
+void generate_frames(ComplexScene *scene) {
+    for (int i = 0; i < scene->num_scenes; i++) {
+        int image_pixels[WIDTH][HEIGHT];
+        ComplexBounds *scene_bounds = scene->scenes[i];
+        for (int x = 0; x < WIDTH; x++) {
+            for (int y = 0; y < HEIGHT; y++) {
+                double a = screen_map(x, 0, HEIGHT, scene_bounds->min_real, scene_bounds->max_real);
+                double b = screen_map(x, 0, HEIGHT, scene_bounds->min_img, scene_bounds->max_img);
+
+                int n = color_point(a, b);
+                
+                int color = get_color(n);
+                image_pixels[x][y] = color;
+            }
+        }
+    }
 }
