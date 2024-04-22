@@ -1,6 +1,6 @@
 CC=clang
-#CFLAGS   = -Wall -Wpedantic -Werror -Wextra -DDEBUG
-LDFLAGS=-lm
+CFLAGS   = -Wall -Wpedantic -Werror -Wextra -DDEBUG
+LDFLAGS=-lgd -lpng -lz -ljpeg -lfreetype -lm
 
 SRCS=$(wildcard *.c)
 OBJS=$(SRCS:.c=.o)
@@ -17,7 +17,7 @@ $(EXEC): $(OBJS)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm -f $(EXEC) $(OBJS)
+	rm -f $(EXEC) $(OBJS) *.jpg
 
 format:
 	clang-format -i *.c *.h

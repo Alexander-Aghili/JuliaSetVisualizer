@@ -4,13 +4,14 @@
 
 #include "constants.h"
 #include "color_utilities.h"
+#include "graphics_utilities.h"
 #include "complex.h"
 #include "assert.h"
 
 ComplexScene *create_complex_scene(ComplexNumber *c, ComplexBounds *start, ComplexBounds *end);
 void generate_frames(ComplexScene *scene);
 
-int main(int argc, char **argv) {
+int main() {
     ComplexScene *scene = create_complex_scene(NULL, NULL, NULL);
     for (int i = 0; i < scene->num_scenes; i++) {
         ComplexBounds *bounds = scene->scenes[i];
@@ -100,18 +101,22 @@ double screen_map(
 
 void generate_frames(ComplexScene *scene) {
     for (int i = 0; i < scene->num_scenes; i++) {
-        int image_pixels[WIDTH][HEIGHT];
         ComplexBounds *scene_bounds = scene->scenes[i];
+        int image_pixels[WIDTH][HEIGHT];
         for (int x = 0; x < WIDTH; x++) {
             for (int y = 0; y < HEIGHT; y++) {
                 double a = screen_map(x, 0, HEIGHT, scene_bounds->min_real, scene_bounds->max_real);
                 double b = screen_map(x, 0, HEIGHT, scene_bounds->min_img, scene_bounds->max_img);
-
+            
                 int n = color_point(a, b);
                 
+                fprintf(stderr, "%d ", n);
                 int color = get_color(n);
                 image_pixels[x][y] = color;
             }
+            fprintf(stderr, "\n");
         }
+        create_image(i, image_pixels);
+        return;
     }
 }
