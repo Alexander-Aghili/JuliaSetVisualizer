@@ -44,7 +44,7 @@ ComplexScene *create_complex_scene(ComplexNumber *c, ComplexBounds *start, Compl
         end->min_real = DEFAULT_END_MIN_REAL;
     }
 
-    double max_img_incr = (end->max_img - start->max_real) / NUM_FRAMES;
+    double max_img_incr = (end->max_img - start->max_img) / NUM_FRAMES;
     double min_img_incr = (end->min_img - start->min_img) / NUM_FRAMES;
     double max_real_incr = (end->max_real - start->max_real) / NUM_FRAMES;
     double min_real_incr = (end->min_real - start->min_real) / NUM_FRAMES;
