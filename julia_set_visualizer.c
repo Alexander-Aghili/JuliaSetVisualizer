@@ -41,20 +41,26 @@ ComplexScene *create_complex_scene(ComplexNumber *c, ComplexBounds *start, Compl
         end->min_real = DEFAULT_END_MIN_REAL;
     }
 
-    double max_img_incr = (end->max_img - start->max_img) / NUM_FRAMES;
-    double min_img_incr = (end->min_img - start->min_img) / NUM_FRAMES;
-    double max_real_incr = (end->max_real - start->max_real) / NUM_FRAMES;
-    double min_real_incr = (end->min_real - start->min_real) / NUM_FRAMES;
+    double max_img_diff = (end->max_img - start->max_img);
+    double min_img_diff = (end->min_img - start->min_img);
+    double max_real_diff = (end->max_real - start->max_real);
+    double min_real_diff = (end->min_real - start->min_real);
+
+   double min_difference = fmin(fabs(min_real_diff),
+        fmin(fabs(max_real_diff), fmin(fabs(max_img_diff), fabs(min_img_diff)))) / NUM_FRAMES;
+
+    int num_bounds = (int) (log(min_difference) / (log(SCALE_FACTOR)));
+
+    double max_img_incr = (end->max_img - start->max_img) / num_bounds;
+    double min_img_incr = (end->min_img - start->min_img) / num_bounds;
+    double max_real_incr = (end->max_real - start->max_real) / num_bounds;
+    double min_real_incr = (end->min_real - start->min_real) / num_bounds;
 
     double curr_max_img = start->max_img;
     double curr_min_img = start->min_img;
     double curr_max_real = start->max_real;
     double curr_min_real = start->min_real;
 
-    double min_difference = fmin(fabs(min_real_incr),
-        fmin(fabs(max_real_incr), fmin(fabs(max_img_incr), fabs(min_img_incr))));
-
-    int num_bounds = (int) (log(min_difference) / (log(SCALE_FACTOR)));
 
     assert(num_bounds > 0);
 
@@ -77,10 +83,6 @@ ComplexScene *create_complex_scene(ComplexNumber *c, ComplexBounds *start, Compl
 
         scene_bounds[i + 1] = curr_bounds;
 
-        max_img_incr *= SCALE_FACTOR;
-        min_img_incr *= SCALE_FACTOR;
-        max_img_incr *= SCALE_FACTOR;
-        min_real_incr *= SCALE_FACTOR;
     }
     scene_bounds[num_bounds + 1] = end;
 
@@ -98,8 +100,8 @@ double screen_map(
 
 void generate_frames(ComplexScene *scene) {
     for (int i = 0; i < scene->num_scenes; i++) {
-        fprintf(stderr, "Scene %d\n", i);
         ComplexBounds *scene_bounds = scene->scenes[i];
+        fprintf(stderr, "Scene %d (%f, %f)U(%f, %f)\n", i, scene_bounds->min_real, scene_bounds->max_real, scene_bounds->min_img, scene_bounds->max_img);
         uint32_t image_pixels[WIDTH][HEIGHT];
         for (int x = 0; x < WIDTH; x++) {
             for (int y = 0; y < HEIGHT; y++) {
