@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
+#include <inttypes.h>
 
 #include "constants.h"
 #include "color_utilities.h"
@@ -12,12 +13,8 @@ ComplexScene *create_complex_scene(ComplexNumber *c, ComplexBounds *start, Compl
 void generate_frames(ComplexScene *scene);
 
 int main() {
+    initialize_color_map(); 
     ComplexScene *scene = create_complex_scene(NULL, NULL, NULL);
-    for (int i = 0; i < scene->num_scenes; i++) {
-        ComplexBounds *bounds = scene->scenes[i];
-        fprintf(stderr, "%f %f %f %f\n", bounds->max_img, bounds->min_img, bounds->max_real,
-            bounds->min_real);
-    }
     generate_frames(scene);
 }
 
@@ -101,22 +98,20 @@ double screen_map(
 
 void generate_frames(ComplexScene *scene) {
     for (int i = 0; i < scene->num_scenes; i++) {
+        fprintf(stderr, "Scene %d\n", i);
         ComplexBounds *scene_bounds = scene->scenes[i];
-        int image_pixels[WIDTH][HEIGHT];
+        uint32_t image_pixels[WIDTH][HEIGHT];
         for (int x = 0; x < WIDTH; x++) {
             for (int y = 0; y < HEIGHT; y++) {
-                double a = screen_map(x, 0, HEIGHT, scene_bounds->min_real, scene_bounds->max_real);
-                double b = screen_map(x, 0, HEIGHT, scene_bounds->min_img, scene_bounds->max_img);
+                double a = screen_map(x, 0, WIDTH, scene_bounds->min_real, scene_bounds->max_real);
+                double b = screen_map(y, 0, HEIGHT, scene_bounds->min_img, scene_bounds->max_img);
             
                 int n = color_point(a, b);
-                
-                fprintf(stderr, "%d ", n);
-                int color = get_color(n);
+
+                uint32_t color = get_color(n);
                 image_pixels[x][y] = color;
             }
-            fprintf(stderr, "\n");
         }
         create_image(i, image_pixels);
-        return;
     }
 }

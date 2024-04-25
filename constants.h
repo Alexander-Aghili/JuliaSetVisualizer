@@ -5,7 +5,7 @@
 #define SCALE_FACTOR   0.9
 
 #define WIDTH  800
-#define HEIGHT 100
+#define HEIGHT 600
 
 #define NUM_FRAMES 10
 

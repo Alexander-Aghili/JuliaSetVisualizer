@@ -1,11 +1,11 @@
 #include "color_utilities.h"
 
-int get_int_from_color(int red, int green, int blue) {
+uint32_t get_int_from_color(int red, int green, int blue) {
     red = (red << 16) & 0x00FF0000;
     green = (green << 8) & 0x0000FF00;
     blue = blue & 0x000000FF;
 
-    return 0xFF000000 | red | green | blue;
+    return 0x00000000 | red | green | blue;
 }
 
 void initialize_color_map() {
@@ -33,7 +33,7 @@ void initialize_color_map() {
      * Taken from https://stackoverflow.com/questions/16500656/which-color-gradient-is-used-to-color-mandelbrot-in-wikipedia
      * 
      */
-int get_color(int n) {
+uint32_t get_color(int n) {
     if (n < MAX_ITERATIONS && n > 0) {
         int i = n % 16;
         return color_map[i];
