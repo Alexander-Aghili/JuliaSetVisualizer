@@ -20,7 +20,7 @@ clean:
 	rm -f $(EXEC) $(OBJS) *.png *.mp4
 
 video:
-	ffmpeg -framerate 10 -i %d.png -c:v libx264 -r 30 output.mp4
+	ffmpeg -framerate 25 -i %d.png -c:v libx264 -r 30 output.mp4
 
 format:
 	clang-format -i *.c *.h

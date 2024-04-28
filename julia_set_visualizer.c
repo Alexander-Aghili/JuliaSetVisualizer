@@ -41,20 +41,12 @@ ComplexScene *create_complex_scene(ComplexNumber *c, ComplexBounds *start, Compl
         end->min_real = DEFAULT_END_MIN_REAL;
     }
 
-    double max_img_diff = (end->max_img - start->max_img);
-    double min_img_diff = (end->min_img - start->min_img);
-    double max_real_diff = (end->max_real - start->max_real);
-    double min_real_diff = (end->min_real - start->min_real);
+    int num_bounds = NUM_FRAMES;
 
-   double min_difference = fmin(fabs(min_real_diff),
-        fmin(fabs(max_real_diff), fmin(fabs(max_img_diff), fabs(min_img_diff)))) / NUM_FRAMES;
-
-    int num_bounds = (int) (log(min_difference) / (log(SCALE_FACTOR)));
-
-    double max_img_incr = (end->max_img - start->max_img) / num_bounds;
-    double min_img_incr = (end->min_img - start->min_img) / num_bounds;
-    double max_real_incr = (end->max_real - start->max_real) / num_bounds;
-    double min_real_incr = (end->min_real - start->min_real) / num_bounds;
+    double max_img_incr = (end->max_img - start->max_img) / NUM_FRAMES;
+    double min_img_incr = (end->min_img - start->min_img) / NUM_FRAMES;
+    double max_real_incr = (end->max_real - start->max_real) / NUM_FRAMES;
+    double min_real_incr = (end->min_real - start->min_real) / NUM_FRAMES;
 
     double curr_max_img = start->max_img;
     double curr_min_img = start->min_img;
@@ -65,10 +57,12 @@ ComplexScene *create_complex_scene(ComplexNumber *c, ComplexBounds *start, Compl
     assert(num_bounds > 0);
 
     ComplexBounds **scene_bounds
-        = (ComplexBounds **) calloc(num_bounds + 2, sizeof(ComplexBounds *));
+        = (ComplexBounds **) calloc(num_bounds, sizeof(ComplexBounds *));
     scene_bounds[0] = start;
-
-    for (int i = 0; i < num_bounds; i++) {
+    scene->num_scenes = 1;
+    
+    int i = 1;
+    while (fabs(curr_max_img - end->max_img) > EPSILON || fabs(curr_max_real - end->max_real) > EPSILON || fabs(curr_min_img - end->min_img) > EPSILON || fabs(curr_min_real - end->min_real) > EPSILON){
         ComplexBounds *curr_bounds = (ComplexBounds *) calloc(1, sizeof(ComplexBounds));
         assert(curr_bounds != NULL);
         curr_max_img += max_img_incr;
@@ -81,13 +75,21 @@ ComplexScene *create_complex_scene(ComplexNumber *c, ComplexBounds *start, Compl
         curr_bounds->max_real = curr_max_real;
         curr_bounds->min_real = curr_min_real;
 
-        scene_bounds[i + 1] = curr_bounds;
+        scene_bounds[i++] = curr_bounds;
+        fprintf(stderr, "Scene %d (%f, %f)U(%f, %f)\n", i-1, scene_bounds[i-1]->min_real, scene_bounds[i-1]->max_real, scene_bounds[i-1]->min_img, scene_bounds[i-1]->max_img);
+        scene->num_scenes++;
 
+        if (scene->num_scenes >= num_bounds-1) {
+            scene_bounds = realloc(scene_bounds, (num_bounds * 2)*sizeof(ComplexBounds*));
+            num_bounds *= 2;
+        }
+
+        max_img_incr *= SCALE_FACTOR;
+        min_img_incr *= SCALE_FACTOR;
+        max_real_incr *= SCALE_FACTOR;
+        min_real_incr *= SCALE_FACTOR;
     }
-    scene_bounds[num_bounds + 1] = end;
-
     scene->scenes = scene_bounds;
-    scene->num_scenes = num_bounds + 2;
 
     return scene;
 }
