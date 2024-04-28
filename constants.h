@@ -3,7 +3,7 @@
 #define MAX_ITERATIONS 1000
 #define THRESHOLD      10
 #define SCALE_FACTOR   0.9
-#define EPSILON 0.000001
+#define EPSILON        0.000001
 
 #define WIDTH  800
 #define HEIGHT 600

@@ -46,11 +46,11 @@ int color_point(double a, double b) {
     double y = b;
 
     int n = 0;
-    while (n < MAX_ITERATIONS) { 
-        double u = a*a - b*b;
-        double v = 2*a*b;
+    while (n < MAX_ITERATIONS) {
+        double u = a * a - b * b;
+        double v = 2 * a * b;
 
-        if (fabs(u+v) > THRESHOLD) {
+        if (fabs(u + v) > THRESHOLD) {
             break;
         }
 

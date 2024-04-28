@@ -13,7 +13,7 @@ ComplexScene *create_complex_scene(ComplexNumber *c, ComplexBounds *start, Compl
 void generate_frames(ComplexScene *scene);
 
 int main() {
-    initialize_color_map(); 
+    initialize_color_map();
     ComplexScene *scene = create_complex_scene(NULL, NULL, NULL);
     generate_frames(scene);
 }
@@ -53,16 +53,17 @@ ComplexScene *create_complex_scene(ComplexNumber *c, ComplexBounds *start, Compl
     double curr_max_real = start->max_real;
     double curr_min_real = start->min_real;
 
-
     assert(num_bounds > 0);
 
-    ComplexBounds **scene_bounds
-        = (ComplexBounds **) calloc(num_bounds, sizeof(ComplexBounds *));
+    ComplexBounds **scene_bounds = (ComplexBounds **) calloc(num_bounds, sizeof(ComplexBounds *));
     scene_bounds[0] = start;
     scene->num_scenes = 1;
-    
+
     int i = 1;
-    while (fabs(curr_max_img - end->max_img) > EPSILON || fabs(curr_max_real - end->max_real) > EPSILON || fabs(curr_min_img - end->min_img) > EPSILON || fabs(curr_min_real - end->min_real) > EPSILON){
+    while (fabs(curr_max_img - end->max_img) > EPSILON
+           || fabs(curr_max_real - end->max_real) > EPSILON
+           || fabs(curr_min_img - end->min_img) > EPSILON
+           || fabs(curr_min_real - end->min_real) > EPSILON) {
         ComplexBounds *curr_bounds = (ComplexBounds *) calloc(1, sizeof(ComplexBounds));
         assert(curr_bounds != NULL);
         curr_max_img += max_img_incr;
@@ -76,11 +77,13 @@ ComplexScene *create_complex_scene(ComplexNumber *c, ComplexBounds *start, Compl
         curr_bounds->min_real = curr_min_real;
 
         scene_bounds[i++] = curr_bounds;
-        fprintf(stderr, "Scene %d (%f, %f)U(%f, %f)\n", i-1, scene_bounds[i-1]->min_real, scene_bounds[i-1]->max_real, scene_bounds[i-1]->min_img, scene_bounds[i-1]->max_img);
+        fprintf(stderr, "Scene %d (%f, %f)U(%f, %f)\n", i - 1, scene_bounds[i - 1]->min_real,
+            scene_bounds[i - 1]->max_real, scene_bounds[i - 1]->min_img,
+            scene_bounds[i - 1]->max_img);
         scene->num_scenes++;
 
-        if (scene->num_scenes >= num_bounds-1) {
-            scene_bounds = realloc(scene_bounds, (num_bounds * 2)*sizeof(ComplexBounds*));
+        if (scene->num_scenes >= num_bounds - 1) {
+            scene_bounds = realloc(scene_bounds, (num_bounds * 2) * sizeof(ComplexBounds *));
             num_bounds *= 2;
         }
 
@@ -103,13 +106,14 @@ double screen_map(
 void generate_frames(ComplexScene *scene) {
     for (int i = 0; i < scene->num_scenes; i++) {
         ComplexBounds *scene_bounds = scene->scenes[i];
-        fprintf(stderr, "Scene %d (%f, %f)U(%f, %f)\n", i, scene_bounds->min_real, scene_bounds->max_real, scene_bounds->min_img, scene_bounds->max_img);
+        fprintf(stderr, "Scene %d (%f, %f)U(%f, %f)\n", i, scene_bounds->min_real,
+            scene_bounds->max_real, scene_bounds->min_img, scene_bounds->max_img);
         uint32_t image_pixels[WIDTH][HEIGHT];
         for (int x = 0; x < WIDTH; x++) {
             for (int y = 0; y < HEIGHT; y++) {
                 double a = screen_map(x, 0, WIDTH, scene_bounds->min_real, scene_bounds->max_real);
                 double b = screen_map(y, 0, HEIGHT, scene_bounds->min_img, scene_bounds->max_img);
-            
+
                 int n = color_point(a, b);
 
                 uint32_t color = get_color(n);
