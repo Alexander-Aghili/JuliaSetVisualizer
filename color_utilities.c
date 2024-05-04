@@ -8,6 +8,18 @@ uint32_t get_int_from_color(int red, int green, int blue) {
     return 0x00000000 | red | green | blue;
 }
 
+uint8_t red(uint32_t color) {
+    return (uint8_t) ((color >> 16) & 0x000000FF);
+}
+
+uint8_t green(uint32_t color) {
+    return (uint8_t) ((color >> 8) & 0x000000FF);
+}
+
+uint8_t blue(uint32_t color) {
+    return (uint8_t) (color & 0x000000FF);
+}
+
 void initialize_color_map() {
     color_map[0] = get_int_from_color(66, 30, 15);
     color_map[1] = get_int_from_color(25, 7, 26);
@@ -41,14 +53,14 @@ uint32_t get_color(int n) {
     return black;
 }
 
-int color_point(double a, double b) {
+int color_point(double a, double b, ComplexNumber* c) {
     double x = a;
     double y = b;
 
     int n = 0;
     while (n < MAX_ITERATIONS) {
-        double u = a * a - b * b;
-        double v = 2 * a * b;
+        double u = (a * a - b * b) + c->x ;
+        double v = (2 * a * b) + c->y;
 
         if (fabs(u + v) > THRESHOLD) {
             break;

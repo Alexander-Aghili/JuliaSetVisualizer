@@ -3,12 +3,14 @@
 #define MAX_ITERATIONS 1000
 #define THRESHOLD      10
 #define SCALE_FACTOR   0.9
-#define EPSILON        0.000001
+#define EPSILON        0.00001
 
 #define WIDTH  800
 #define HEIGHT 600
 
 #define NUM_FRAMES 10
+#define FPS 20
+#define WAIT 1.0 / FPS 
 
 #define DEFAULT_START_MAX_REAL 2
 #define DEFAULT_START_MAX_IMG  2
