@@ -1,6 +1,9 @@
+#include <SDL2/SDL_events.h>
 #include <SDL2/SDL_render.h>
+#include <linux/limits.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <sys/types.h>
 #include <unistd.h>
 #include <stdio.h>
 #include <math.h>
@@ -11,10 +14,12 @@
 #include "graphics_utilities.h"
 #include "complex.h"
 #include "assert.h"
+#include "events.h"
 
 ComplexScene *create_complex_scene(ComplexNumber *c, ComplexBounds *start, ComplexBounds *end);
 void generate_frames(ComplexScene *scene);
 void display_scene(ComplexScene* scene);
+void show_julia_start(ComplexScene* scene);
 
 double get_wait_time();
 
@@ -25,7 +30,8 @@ int main() {
     ComplexScene *scene = create_complex_scene(c, NULL, NULL);
 
 //    generate_frames(scene);
-    display_scene(scene);
+//    display_scene(scene);
+      show_julia_start(scene);
 }
 
 void wait() {
@@ -121,6 +127,8 @@ double screen_map(
            + min_output;
 }
 
+
+
 void generate_frames(ComplexScene *scene) {
     for (int i = 0; i < scene->num_scenes; i++) {
         ComplexBounds *scene_bounds = scene->scenes[i];
@@ -147,10 +155,9 @@ void display_scene(ComplexScene* scene) {
         ComplexBounds *scene_bounds = scene->scenes[i];
         fprintf(stderr, "Scene %d (%f, %f)U(%f, %f)\n", i, scene_bounds->min_real,
             scene_bounds->max_real, scene_bounds->min_img, scene_bounds->max_img);
-
         uint32_t **image_pixels = (uint32_t **)malloc(WIDTH * sizeof(uint32_t *));
         for (int i = 0; i < WIDTH; i++) {
-            image_pixels[i] = (uint32_t *)malloc(HEIGHT * sizeof(uint32_t));
+             image_pixels[i] = (uint32_t *)malloc(HEIGHT* sizeof(uint32_t));
         }
 
         for (int x = 0; x < WIDTH; x++) {
@@ -165,12 +172,70 @@ void display_scene(ComplexScene* scene) {
             }
         }
         scene->image_scenes[i] = image_pixels;
+        break;
     }
 
 
 
     for (int i = 0; i < scene->num_scenes; i++) {
         display_image(scene->image_scenes[i]);    
+        scene_complete();
         wait();
+    }
+}
+
+uint32_t** create_image_pixels_arr(int x, int y) {
+    uint32_t **image_pixels = (uint32_t **)malloc(x * sizeof(uint32_t *));
+    for (int i = 0; i < x; i++) {
+        image_pixels[i] = (uint32_t *)malloc(y * sizeof(uint32_t));
+    }
+    return image_pixels;
+}
+
+void calculate_pixels(ComplexScene* scene, int i, uint32_t*** ip) {
+    uint32_t ** image_pixels = *(ip);
+    ComplexBounds *scene_bounds = scene->scenes[i];
+    for (int x = 0; x < WIDTH; x++) {
+            for (int y = 0; y < HEIGHT; y++) {
+                double a = screen_map(x, 0, WIDTH, scene_bounds->min_real, scene_bounds->max_real);
+                double b = screen_map(y, 0, HEIGHT, scene_bounds->min_img, scene_bounds->max_img);
+
+                int n = color_point(a, b, scene->c);
+
+                uint32_t color = get_color(n);
+                image_pixels[x][y] = color;
+            }
+    }
+    return;
+}
+
+void show_julia_start(ComplexScene* scene) {
+    int quit = 0;
+    SDL_Event event;
+
+    uint32_t** image_pixels = create_image_pixels_arr(WIDTH, HEIGHT);
+    while (!quit) {
+        fprintf(stderr, "%f + %fi\n", scene->c->x, scene->c->y);
+        calculate_pixels(scene, 0, &image_pixels);
+        display_image(image_pixels);    
+        while (SDL_WaitEvent(&event)) {
+            if (event.type == SDL_QUIT) {
+                quit = 1;
+                break;
+            } else if (event.key.keysym.sym == SDLK_LEFT) {
+                scene->c->x -= 0.1;
+                break;
+            } else if (event.key.keysym.sym == SDLK_RIGHT) {
+                scene->c->x += 0.1;
+                break;
+            } else if (event.key.keysym.sym == SDLK_UP) {
+                scene->c->y += 0.1;
+                break;
+            } else if (event.key.keysym.sym == SDLK_DOWN) {
+                scene->c->y -= 0.1;
+                break;
+            }
+        }
+
     }
 }

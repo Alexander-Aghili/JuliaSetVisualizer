@@ -12,7 +12,6 @@ void start_sdl() {
     SDL_SetWindowTitle(window, "Julia Set");
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
     SDL_RenderClear(renderer);
-
 }
 
 void display_image(uint32_t** image_pixels) {
@@ -27,7 +26,6 @@ void display_image(uint32_t** image_pixels) {
 }
 
 void scene_complete() {
-
     SDL_Event event;
     while (SDL_WaitEvent(&event)) {
         if (event.type == SDL_QUIT) {
