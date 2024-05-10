@@ -7,6 +7,9 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <math.h>
+#include <stdlib.h>
+#include <time.h>
+#include <sys/time.h>
 #include <SDL2/SDL.h>
 
 #include "constants.h"
@@ -209,6 +212,13 @@ void calculate_pixels(ComplexScene* scene, int i, uint32_t*** ip) {
     return;
 }
 
+struct timeval GetTimeStamp() 
+{
+    struct timeval tv;
+    gettimeofday(&tv,NULL);
+    return tv;
+}
+
 void show_julia_start(ComplexScene* scene) {
     int quit = 0;
     SDL_Event event;
@@ -218,21 +228,24 @@ void show_julia_start(ComplexScene* scene) {
         fprintf(stderr, "%f + %fi\n", scene->c->x, scene->c->y);
         calculate_pixels(scene, 0, &image_pixels);
         display_image(image_pixels);    
+        struct timeval init = GetTimeStamp();
+        signed long init_time = 1000000 * init.tv_sec + init.tv_usec; 
         while (SDL_WaitEvent(&event)) {
             if (event.type == SDL_QUIT) {
                 quit = 1;
                 break;
             } else if (event.key.keysym.sym == SDLK_LEFT) {
-                scene->c->x -= 0.1;
-                break;
+                scene->c->x -= 0.01;
             } else if (event.key.keysym.sym == SDLK_RIGHT) {
-                scene->c->x += 0.1;
-                break;
+                scene->c->x += 0.01;
             } else if (event.key.keysym.sym == SDLK_UP) {
-                scene->c->y += 0.1;
-                break;
+                scene->c->y += 0.01;
             } else if (event.key.keysym.sym == SDLK_DOWN) {
-                scene->c->y -= 0.1;
+                scene->c->y -= 0.01;
+            }
+            struct timeval curr = GetTimeStamp();
+            signed long curr_time = 1000000 * curr.tv_sec + curr.tv_usec; 
+            if (curr_time-init_time >= 500) {
                 break;
             }
         }
