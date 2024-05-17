@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <sys/time.h>
+#include <pthread.h>
 #include <SDL2/SDL.h>
 
 #include "constants.h"
@@ -195,20 +196,58 @@ uint32_t** create_image_pixels_arr(int x, int y) {
     return image_pixels;
 }
 
+typedef struct {
+   int x;
+   int y;
+   ComplexBounds* scene_bounds;
+   ComplexNumber* c;
+   uint32_t** image_pixels;
+} Pixel;
+
+void* add_pixel_mutli(void* args) {
+    int x = ((Pixel*) args)->x;
+    int y = ((Pixel*) args)->y;
+    ComplexBounds* scene_bounds = ((Pixel*) args)->scene_bounds;
+    ComplexNumber* c = ((Pixel*) args)->c;
+    uint32_t ** image_pixels = ((Pixel*) args)->image_pixels;
+
+    double a = screen_map(x, 0, WIDTH, scene_bounds->min_real, scene_bounds->max_real);
+    double b = screen_map(y, 0, HEIGHT, scene_bounds->min_img, scene_bounds->max_img);
+
+    int n = color_point(a, b, c);
+
+    uint32_t color = get_color(n);
+    image_pixels[x][y] = color;
+    return NULL;
+}
+
+
+pthread_t add_pixel(int x, int y, ComplexBounds* scene_bounds, ComplexNumber* c, uint32_t** image_pixels) {
+    Pixel* args = (Pixel*) calloc(1, sizeof(Pixel));
+    args->x = x;
+    args->y = y;
+    args->scene_bounds = scene_bounds;
+    args->c = c;
+    args-> image_pixels = image_pixels;
+    
+    add_pixel_mutli(args); 
+    pthread_t tid = 0;
+    return tid;//for now since multi thread not working (probably stupid to have a thread per pixel so Im gunna change that)
+
+    pthread_create(&tid, NULL, add_pixel_mutli, (void *)args);   
+    return tid;
+}
+
 void calculate_pixels(ComplexScene* scene, int i, uint32_t*** ip) {
     uint32_t ** image_pixels = *(ip);
     ComplexBounds *scene_bounds = scene->scenes[i];
     for (int x = 0; x < WIDTH; x++) {
             for (int y = 0; y < HEIGHT; y++) {
-                double a = screen_map(x, 0, WIDTH, scene_bounds->min_real, scene_bounds->max_real);
-                double b = screen_map(y, 0, HEIGHT, scene_bounds->min_img, scene_bounds->max_img);
-
-                int n = color_point(a, b, scene->c);
-
-                uint32_t color = get_color(n);
-                image_pixels[x][y] = color;
+                add_pixel(x, y, scene_bounds, scene->c, image_pixels);
             }
     }
+    
+
     return;
 }
 
@@ -222,26 +261,34 @@ struct timeval GetTimeStamp()
 void show_julia_start(ComplexScene* scene) {
     int quit = 0;
     SDL_Event event;
+    int change = 1;
 
     uint32_t** image_pixels = create_image_pixels_arr(WIDTH, HEIGHT);
     while (!quit) {
-        fprintf(stderr, "%f + %fi\n", scene->c->x, scene->c->y);
-        calculate_pixels(scene, 0, &image_pixels);
-        display_image(image_pixels);    
+        if (change) {
+            fprintf(stderr, "%f + %fi\n", scene->c->x, scene->c->y);
+            calculate_pixels(scene, 0, &image_pixels);
+            display_image(image_pixels);    
+            change = 0;
+        }
         struct timeval init = GetTimeStamp();
         signed long init_time = 1000000 * init.tv_sec + init.tv_usec; 
-        while (SDL_WaitEvent(&event)) {
+        while (SDL_PollEvent(&event)) {
             if (event.type == SDL_QUIT) {
                 quit = 1;
                 break;
             } else if (event.key.keysym.sym == SDLK_LEFT) {
                 scene->c->x -= 0.01;
+                change = 1;
             } else if (event.key.keysym.sym == SDLK_RIGHT) {
                 scene->c->x += 0.01;
+                change = 1;
             } else if (event.key.keysym.sym == SDLK_UP) {
                 scene->c->y += 0.01;
+                change = 1;
             } else if (event.key.keysym.sym == SDLK_DOWN) {
                 scene->c->y -= 0.01;
+                change = 1;
             }
             struct timeval curr = GetTimeStamp();
             signed long curr_time = 1000000 * curr.tv_sec + curr.tv_usec; 
