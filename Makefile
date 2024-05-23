@@ -17,7 +17,7 @@ $(EXEC): $(OBJS)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm -f $(EXEC) $(OBJS) *.png *.mp4
+	rm -rf $(EXEC) $(OBJS) *.png *.mp4 ./media/ __pycache__/
 
 video:
 	ffmpeg -framerate 30 -i %d.png -c:v libx264 -r 30 output.mp4

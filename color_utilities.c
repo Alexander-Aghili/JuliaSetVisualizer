@@ -1,4 +1,6 @@
 #include "color_utilities.h"
+#include "constants.h"
+#include <math.h>
 
 uint32_t get_int_from_color(int red, int green, int blue) {
     red = (red << 16) & 0x00FF0000;
@@ -71,6 +73,8 @@ int color_point(double a, double b, ComplexNumber* c) {
 
         n++;
     }
-
+    if (n == MAX_ITERATIONS){
+        return n;
+    } 
     return n;
 }

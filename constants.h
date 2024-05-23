@@ -5,8 +5,8 @@
 #define SCALE_FACTOR   0.9
 #define EPSILON        0.00001
 
-#define WIDTH  800
-#define HEIGHT 600
+#define WIDTH  1800
+#define HEIGHT 1200
 
 #define NUM_FRAMES 10
 #define FPS 20
