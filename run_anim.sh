@@ -1,1 +1,1 @@
-manim -pql ./complex_project.py ComplexProject 
+manim -pqh ./julia_example.py JuliaSet
