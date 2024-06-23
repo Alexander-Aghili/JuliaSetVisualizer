@@ -33,9 +33,9 @@ int main() {
     ComplexNumber* c = create_complex_number(0, 0);
     ComplexScene *scene = create_complex_scene(c, NULL, NULL);
 
-    generate_frames(scene);
+//    generate_frames(scene);
 //    display_scene(scene);
-//      show_julia_start(scene);
+      show_julia_start(scene);
 }
 
 void wait() {

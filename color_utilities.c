@@ -56,8 +56,8 @@ uint32_t get_color(int n) {
 }
 
 int color_point(double a, double b, ComplexNumber* c) {
-    double x = a;
-    double y = b;
+//    double x = a;
+//    double y = b;
 
     int n = 0;
     while (n < MAX_ITERATIONS) {
@@ -68,8 +68,8 @@ int color_point(double a, double b, ComplexNumber* c) {
             break;
         }
 
-        a = u + x;
-        b = v + y;
+        a = u + a;
+        b = v + b;
 
         n++;
     }
