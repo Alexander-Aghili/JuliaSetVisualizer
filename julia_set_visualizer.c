@@ -21,8 +21,6 @@
 #include "events.h"
 
 ComplexScene *create_complex_scene(ComplexNumber *c, ComplexBounds *start, ComplexBounds *end);
-void generate_frames(ComplexScene *scene);
-void display_scene(ComplexScene* scene);
 void show_julia_start(ComplexScene* scene);
 
 double get_wait_time();
@@ -33,8 +31,6 @@ int main() {
     ComplexNumber* c = create_complex_number(0, 0);
     ComplexScene *scene = create_complex_scene(c, NULL, NULL);
 
-//    generate_frames(scene);
-//    display_scene(scene);
       show_julia_start(scene);
 }
 
@@ -131,63 +127,6 @@ double screen_map(
            + min_output;
 }
 
-
-
-void generate_frames(ComplexScene *scene) {
-    for (int i = 0; i < scene->num_scenes; i++) {
-        ComplexBounds *scene_bounds = scene->scenes[i];
-        fprintf(stderr, "Scene %d (%f, %f)U(%f, %f)\n", i, scene_bounds->min_real,
-            scene_bounds->max_real, scene_bounds->min_img, scene_bounds->max_img);
-        uint32_t image_pixels[WIDTH][HEIGHT];
-        for (int x = 0; x < WIDTH; x++) {
-            for (int y = 0; y < HEIGHT; y++) {
-                double a = screen_map(x, 0, WIDTH, scene_bounds->min_real, scene_bounds->max_real);
-                double b = screen_map(y, 0, HEIGHT, scene_bounds->min_img, scene_bounds->max_img);
-
-                int n = color_point(a, b, scene->c);
-
-                uint32_t color = get_color(n);
-                image_pixels[x][y] = color;
-            }
-        }
-        create_image(i, image_pixels);
-    }
-}
-
-void display_scene(ComplexScene* scene) {
-    for (int i = 0; i < scene->num_scenes; i++) {
-        ComplexBounds *scene_bounds = scene->scenes[i];
-        fprintf(stderr, "Scene %d (%f, %f)U(%f, %f)\n", i, scene_bounds->min_real,
-            scene_bounds->max_real, scene_bounds->min_img, scene_bounds->max_img);
-        uint32_t **image_pixels = (uint32_t **)malloc(WIDTH * sizeof(uint32_t *));
-        for (int i = 0; i < WIDTH; i++) {
-             image_pixels[i] = (uint32_t *)malloc(HEIGHT* sizeof(uint32_t));
-        }
-
-        for (int x = 0; x < WIDTH; x++) {
-            for (int y = 0; y < HEIGHT; y++) {
-                double a = screen_map(x, 0, WIDTH, scene_bounds->min_real, scene_bounds->max_real);
-                double b = screen_map(y, 0, HEIGHT, scene_bounds->min_img, scene_bounds->max_img);
-
-                int n = color_point(a, b, scene->c);
-
-                uint32_t color = get_color(n);
-                image_pixels[x][y] = color;
-            }
-        }
-        scene->image_scenes[i] = image_pixels;
-        break;
-    }
-
-
-
-    for (int i = 0; i < scene->num_scenes; i++) {
-        display_image(scene->image_scenes[i]);    
-        scene_complete();
-        wait();
-    }
-}
-
 uint32_t** create_image_pixels_arr(int x, int y) {
     uint32_t **image_pixels = (uint32_t **)malloc(x * sizeof(uint32_t *));
     for (int i = 0; i < x; i++) {
@@ -196,71 +135,107 @@ uint32_t** create_image_pixels_arr(int x, int y) {
     return image_pixels;
 }
 
-typedef struct {
-   int x;
-   int y;
-   ComplexBounds* scene_bounds;
-   ComplexNumber* c;
-   uint32_t** image_pixels;
-} Pixel;
-
-void* add_pixel_mutli(void* args) {
-    int x = ((Pixel*) args)->x;
-    int y = ((Pixel*) args)->y;
-    ComplexBounds* scene_bounds = ((Pixel*) args)->scene_bounds;
-    ComplexNumber* c = ((Pixel*) args)->c;
-    uint32_t ** image_pixels = ((Pixel*) args)->image_pixels;
-
+void add_pixel(int x, int y, ComplexBounds* scene_bounds, ComplexNumber* c, uint32_t** image_pixels) {
     double a = screen_map(x, 0, WIDTH, scene_bounds->min_real, scene_bounds->max_real);
     double b = screen_map(y, 0, HEIGHT, scene_bounds->min_img, scene_bounds->max_img);
-
+    
     int n = color_point(a, b, c);
-
     uint32_t color = get_color(n);
     image_pixels[x][y] = color;
-    return NULL;
 }
 
+#define NUM_CHUNKS 3
 
-pthread_t add_pixel(int x, int y, ComplexBounds* scene_bounds, ComplexNumber* c, uint32_t** image_pixels) {
-    Pixel* args = (Pixel*) calloc(1, sizeof(Pixel));
-    args->x = x;
-    args->y = y;
-    args->scene_bounds = scene_bounds;
-    args->c = c;
-    args-> image_pixels = image_pixels;
-    
-    add_pixel_mutli(args); 
-    pthread_t tid = 0;
-    return tid;//for now since multi thread not working (probably stupid to have a thread per pixel so Im gunna change that)
+typedef struct {
+    uint32_t** image_pixels;
+    int x_chunk;
+    int y_chunk;
+    ComplexScene* scene;
+} ChunkData;
 
-    pthread_create(&tid, NULL, add_pixel_mutli, (void *)args);   
-    return tid;
+
+
+void get_chunk_bounds(int screen_width, int screen_height, int num_chunks, int chunk_row, int chunk_col, int *x_min, int *y_min, int *x_max, int *y_max) {
+    // Calculate the width and height of each chunk
+    int chunk_width = screen_width / num_chunks;
+    int chunk_height = screen_height / num_chunks;
+
+    // Calculate the bounds of the specified chunk
+    *x_min = chunk_col * chunk_width;
+    *x_max = *x_min + chunk_width;
+    *y_min = chunk_row * chunk_height;
+    *y_max = *y_min + chunk_height;
+}
+
+void* calculate_chunk(void* d) {
+   ChunkData* data = (ChunkData*) d; 
+   int x_min, x_max, y_min, y_max; 
+   get_chunk_bounds(WIDTH, HEIGHT, NUM_CHUNKS, data->x_chunk, data->y_chunk, &x_min, &y_min, &x_max, &y_max);
+   for (int x = x_min; x < x_max; x++) {
+       for (int y = y_min; y < y_max; y++) {
+           add_pixel(x, y, data->scene->scenes[0], data->scene->c, data->image_pixels);
+       }
+   }
+
+   return NULL;
+}
+
+void run_chunk(uint32_t** ip, int x_chunk, int y_chunk, ComplexScene* scene) {
+    ChunkData* data = (ChunkData*) calloc(1, sizeof(ChunkData));
+    data->image_pixels = ip;
+    data->x_chunk = x_chunk;
+    data->y_chunk = y_chunk;
+    data->scene = scene;
+
+    pthread_t t;
+    pthread_create(&t, NULL, calculate_chunk, data);
 }
 
 void calculate_pixels(ComplexScene* scene, int i, uint32_t*** ip) {
     uint32_t ** image_pixels = *(ip);
-    ComplexBounds *scene_bounds = scene->scenes[i];
-    for (int x = 0; x < WIDTH; x++) {
-            for (int y = 0; y < HEIGHT; y++) {
-                add_pixel(x, y, scene_bounds, scene->c, image_pixels);
-            }
+    printf("%d\n", i);
+//    ComplexBounds *scene_bounds = scene->scenes[i];
+    for (int x_chunk = 0; x_chunk < NUM_CHUNKS; x_chunk++) {
+        for (int y_chunk = 0; y_chunk < NUM_CHUNKS; y_chunk++) {
+            run_chunk(image_pixels, x_chunk, y_chunk, scene);
+        }
     }
-    
-
     return;
 }
 
-struct timeval GetTimeStamp() 
-{
-    struct timeval tv;
-    gettimeofday(&tv,NULL);
-    return tv;
+void wait_event(ComplexNumber *c, int* change, int* quit) {
+    SDL_Event event;
+    struct timeval init;
+        gettimeofday(&init,NULL);
+        signed long init_time = 1000000 * init.tv_sec + init.tv_usec; 
+        while (SDL_PollEvent(&event)) {
+            if (event.type == SDL_QUIT) {
+                *quit = 1;
+                break;
+            } else if (event.key.keysym.sym == SDLK_LEFT) {
+                c->x -= 0.01;
+                *change = 1;
+            } else if (event.key.keysym.sym == SDLK_RIGHT) {
+                c->x += 0.01;
+                *change = 1;
+            } else if (event.key.keysym.sym == SDLK_UP) {
+                c->y += 0.01;
+                *change = 1;
+            } else if (event.key.keysym.sym == SDLK_DOWN) {
+                c->y -= 0.01;
+                *change = 1;
+            }
+            struct timeval curr;
+            gettimeofday(&curr,NULL);
+            signed long curr_time = 1000000 * curr.tv_sec + curr.tv_usec; 
+            if (curr_time-init_time >= 500) {
+                break;
+            }
+        }
 }
 
 void show_julia_start(ComplexScene* scene) {
     int quit = 0;
-    SDL_Event event;
     int change = 1;
 
     uint32_t** image_pixels = create_image_pixels_arr(WIDTH, HEIGHT);
@@ -271,31 +246,6 @@ void show_julia_start(ComplexScene* scene) {
             display_image(image_pixels);    
             change = 0;
         }
-        struct timeval init = GetTimeStamp();
-        signed long init_time = 1000000 * init.tv_sec + init.tv_usec; 
-        while (SDL_PollEvent(&event)) {
-            if (event.type == SDL_QUIT) {
-                quit = 1;
-                break;
-            } else if (event.key.keysym.sym == SDLK_LEFT) {
-                scene->c->x -= 0.01;
-                change = 1;
-            } else if (event.key.keysym.sym == SDLK_RIGHT) {
-                scene->c->x += 0.01;
-                change = 1;
-            } else if (event.key.keysym.sym == SDLK_UP) {
-                scene->c->y += 0.01;
-                change = 1;
-            } else if (event.key.keysym.sym == SDLK_DOWN) {
-                scene->c->y -= 0.01;
-                change = 1;
-            }
-            struct timeval curr = GetTimeStamp();
-            signed long curr_time = 1000000 * curr.tv_sec + curr.tv_usec; 
-            if (curr_time-init_time >= 500) {
-                break;
-            }
-        }
-
+       wait_event(scene->c, &change, &quit); 
     }
 }
