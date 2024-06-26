@@ -31,7 +31,7 @@ int main() {
     ComplexNumber* c = create_complex_number(0, 0);
     ComplexScene *scene = create_complex_scene(c, NULL, NULL);
 
-      show_julia_start(scene);
+    show_julia_start(scene);
 }
 
 void wait() {
@@ -144,7 +144,7 @@ void add_pixel(int x, int y, ComplexBounds* scene_bounds, ComplexNumber* c, uint
     image_pixels[x][y] = color;
 }
 
-#define NUM_CHUNKS 3
+#define NUM_CHUNKS 24 
 
 typedef struct {
     uint32_t** image_pixels;
@@ -152,8 +152,6 @@ typedef struct {
     int y_chunk;
     ComplexScene* scene;
 } ChunkData;
-
-
 
 void get_chunk_bounds(int screen_width, int screen_height, int num_chunks, int chunk_row, int chunk_col, int *x_min, int *y_min, int *x_max, int *y_max) {
     // Calculate the width and height of each chunk
@@ -180,25 +178,30 @@ void* calculate_chunk(void* d) {
    return NULL;
 }
 
-void run_chunk(uint32_t** ip, int x_chunk, int y_chunk, ComplexScene* scene) {
+void run_chunk(pthread_t* tid, uint32_t** ip, int x_chunk, int y_chunk, ComplexScene* scene) {
     ChunkData* data = (ChunkData*) calloc(1, sizeof(ChunkData));
     data->image_pixels = ip;
     data->x_chunk = x_chunk;
     data->y_chunk = y_chunk;
     data->scene = scene;
 
-    pthread_t t;
-    pthread_create(&t, NULL, calculate_chunk, data);
+    pthread_create(tid, NULL, calculate_chunk, data);
 }
 
-void calculate_pixels(ComplexScene* scene, int i, uint32_t*** ip) {
+void calculate_pixels(ComplexScene* scene, uint32_t*** ip) {
     uint32_t ** image_pixels = *(ip);
-    printf("%d\n", i);
 //    ComplexBounds *scene_bounds = scene->scenes[i];
+    pthread_t tid[NUM_CHUNKS * NUM_CHUNKS];
+    int k = 0;
     for (int x_chunk = 0; x_chunk < NUM_CHUNKS; x_chunk++) {
         for (int y_chunk = 0; y_chunk < NUM_CHUNKS; y_chunk++) {
-            run_chunk(image_pixels, x_chunk, y_chunk, scene);
+            run_chunk(&tid[k], image_pixels, x_chunk, y_chunk, scene);
+            k++;
         }
+    }
+
+    for (int k = 0; k < NUM_CHUNKS*NUM_CHUNKS; k++) {
+        pthread_join(tid[k], NULL);
     }
     return;
 }
@@ -241,8 +244,8 @@ void show_julia_start(ComplexScene* scene) {
     uint32_t** image_pixels = create_image_pixels_arr(WIDTH, HEIGHT);
     while (!quit) {
         if (change) {
-            fprintf(stderr, "%f + %fi\n", scene->c->x, scene->c->y);
-            calculate_pixels(scene, 0, &image_pixels);
+            //fprintf(stderr, "%f + %fi\n", scene->c->x, scene->c->y);
+            calculate_pixels(scene, &image_pixels);
             display_image(image_pixels);    
             change = 0;
         }
