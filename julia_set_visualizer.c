@@ -18,6 +18,7 @@
 #include "complex.h"
 #include "assert.h"
 #include "perf_man.h"
+#include "helpers.h"
 
 ComplexScene *create_complex_scene(ComplexNumber *c, ComplexBounds *start);
 void show_julia_start(ComplexScene* scene);
@@ -25,7 +26,11 @@ void performance_test(ComplexScene* scene);
 
 double get_wait_time();
 
-int main() {
+static int num_print, num_chunks;
+
+int main(int argc, char** argv) {
+    argparser(argc, argv, &num_print, &num_chunks);
+
 //    start_sdl();
     initialize_color_map();
     ComplexNumber* c = create_complex_number(0, 0);
@@ -105,7 +110,7 @@ void get_chunk_bounds(int screen_width, int screen_height, int num_chunks, int c
 void* calculate_chunk(void* d) {
    ChunkData* data = (ChunkData*) d; 
    int x_min, x_max, y_min, y_max; 
-   get_chunk_bounds(WIDTH, HEIGHT, NUM_CHUNKS, data->x_chunk, data->y_chunk, &x_min, &y_min, &x_max, &y_max);
+   get_chunk_bounds(WIDTH, HEIGHT, num_chunks, data->x_chunk, data->y_chunk, &x_min, &y_min, &x_max, &y_max);
    for (int x = x_min; x < x_max; x++) {
        for (int y = y_min; y < y_max; y++) {
            add_pixel(x, y, data->scene->bounds, data->scene->c, data->image_pixels);
@@ -127,16 +132,16 @@ void run_chunk(pthread_t* tid, uint32_t** ip, int x_chunk, int y_chunk, ComplexS
 
 void calculate_pixels(ComplexScene* scene, uint32_t*** ip) {
     uint32_t ** image_pixels = *(ip);
-    pthread_t tid[NUM_CHUNKS * NUM_CHUNKS];
+    pthread_t tid[num_chunks * num_chunks];
     int k = 0;
-    for (int x_chunk = 0; x_chunk < NUM_CHUNKS; x_chunk++) {
-        for (int y_chunk = 0; y_chunk < NUM_CHUNKS; y_chunk++) {
+    for (int x_chunk = 0; x_chunk < num_chunks; x_chunk++) {
+        for (int y_chunk = 0; y_chunk < num_chunks; y_chunk++) {
             run_chunk(&tid[k], image_pixels, x_chunk, y_chunk, scene);
             k++;
         }
     }
 
-    for (int k = 0; k < NUM_CHUNKS*NUM_CHUNKS; k++) {
+    for (int k = 0; k < num_chunks*num_chunks; k++) {
         pthread_join(tid[k], NULL);
     }
     return;
@@ -193,21 +198,18 @@ void show_julia_start(ComplexScene* scene) {
     }
 }
 
-#define NUM_ITERATIONS 30 //Central Limit Theorem
 #define NUM_MOVEMENTS 20
 
 void performance_test(ComplexScene* scene) {
     uint32_t** image_pixels = create_image_pixels_arr(WIDTH, HEIGHT);
-    for (int j = 0; j <  NUM_ITERATIONS; j++) {
-        init_timer(j);
-        for (int i = 0; i < NUM_MOVEMENTS; i++) {
-            start_timer();
-            calculate_pixels(scene, &image_pixels);
-            char data[100];
-            sprintf(data, "(%.10f, %.10f)", scene->c->x, scene->c->y);
-            stop_timer_message(data);
-            scene->c->x -= 1;
-        }
+    scene->c->x = 0;
+    init_timer(num_print, num_chunks);
+    for (int i = 0; i < NUM_MOVEMENTS; i++) {
+        start_timer();
+        calculate_pixels(scene, &image_pixels);
+        char data[100];
+        sprintf(data, "(%.10f, %.10f)", scene->c->x, scene->c->y);
+        stop_timer_message(data);
+        scene->c->x -= .01;
     }
-    
 }

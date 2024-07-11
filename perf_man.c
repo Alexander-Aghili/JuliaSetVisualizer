@@ -3,9 +3,9 @@
 static FILE* file;
 static struct timeval t1, t2;
 
-void init_timer(int num) {
+void init_timer(int num_print, int num_chunk) {
     char fn[100];
-    sprintf(fn, "%s_%d_%d%s", FILE_NAME, NUM_CHUNKS, num, FILE_EXT); 
+    sprintf(fn, "%s_%d_%d%s", FILE_NAME, num_chunk, num_print, FILE_EXT); 
     file = fopen(fn, "w");
 }
 
