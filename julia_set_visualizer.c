@@ -6,7 +6,6 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <stdio.h>
-#include <math.h>
 #include <stdlib.h>
 #include <time.h>
 #include <sys/time.h>
@@ -18,27 +17,29 @@
 #include "graphics_utilities.h"
 #include "complex.h"
 #include "assert.h"
-#include "events.h"
+#include "perf_man.h"
 
-ComplexScene *create_complex_scene(ComplexNumber *c, ComplexBounds *start, ComplexBounds *end);
+ComplexScene *create_complex_scene(ComplexNumber *c, ComplexBounds *start);
 void show_julia_start(ComplexScene* scene);
+void performance_test(ComplexScene* scene);
 
 double get_wait_time();
 
 int main() {
-    start_sdl();
+//    start_sdl();
     initialize_color_map();
     ComplexNumber* c = create_complex_number(0, 0);
-    ComplexScene *scene = create_complex_scene(c, NULL, NULL);
+    ComplexScene *scene = create_complex_scene(c, NULL);
 
-    show_julia_start(scene);
+//    show_julia_start(scene);
+    performance_test(scene);
 }
 
 void wait() {
    sleep(WAIT); 
 }
 
-ComplexScene *create_complex_scene(ComplexNumber *c, ComplexBounds *start, ComplexBounds *end) {
+ComplexScene *create_complex_scene(ComplexNumber *c, ComplexBounds *start) {
     ComplexScene *scene = (ComplexScene *) calloc(1, sizeof(ComplexScene));
     assert(scene != NULL);
     scene->c = c;
@@ -53,70 +54,7 @@ ComplexScene *create_complex_scene(ComplexNumber *c, ComplexBounds *start, Compl
         start->min_real = DEFAULT_START_MIN_REAL;
     }
 
-    if (end == NULL) {
-        end = calloc(1, sizeof(ComplexBounds));
-        assert(end != NULL);
-        end->max_img = DEFAULT_END_MAX_IMG;
-        end->min_img = DEFAULT_END_MIN_IMG;
-        end->max_real = DEFAULT_END_MAX_REAL;
-        end->min_real = DEFAULT_END_MIN_REAL;
-    }
-
-    int num_bounds = NUM_FRAMES;
-
-    double max_img_incr = (end->max_img - start->max_img) / NUM_FRAMES;
-    double min_img_incr = (end->min_img - start->min_img) / NUM_FRAMES;
-    double max_real_incr = (end->max_real - start->max_real) / NUM_FRAMES;
-    double min_real_incr = (end->min_real - start->min_real) / NUM_FRAMES;
-
-    double curr_max_img = start->max_img;
-    double curr_min_img = start->min_img;
-    double curr_max_real = start->max_real;
-    double curr_min_real = start->min_real;
-
-    assert(num_bounds > 0);
-
-    ComplexBounds **scene_bounds = (ComplexBounds **) calloc(num_bounds, sizeof(ComplexBounds *));
-    scene_bounds[0] = start;
-    scene->num_scenes = 1;
-
-    int i = 1;
-    while (fabs(curr_max_img - end->max_img) > EPSILON
-           || fabs(curr_max_real - end->max_real) > EPSILON
-           || fabs(curr_min_img - end->min_img) > EPSILON
-           || fabs(curr_min_real - end->min_real) > EPSILON) {
-        ComplexBounds *curr_bounds = (ComplexBounds *) calloc(1, sizeof(ComplexBounds));
-        assert(curr_bounds != NULL);
-        curr_max_img += max_img_incr;
-        curr_min_img += min_img_incr;
-        curr_max_real += max_real_incr;
-        curr_min_real += min_real_incr;
-
-        curr_bounds->max_img = curr_max_img;
-        curr_bounds->min_img = curr_min_img;
-        curr_bounds->max_real = curr_max_real;
-        curr_bounds->min_real = curr_min_real;
-
-        scene_bounds[i++] = curr_bounds;
-        fprintf(stderr, "Scene %d (%f, %f)U(%f, %f)\n", i - 1, scene_bounds[i - 1]->min_real,
-            scene_bounds[i - 1]->max_real, scene_bounds[i - 1]->min_img,
-            scene_bounds[i - 1]->max_img);
-        scene->num_scenes++;
-
-        if (scene->num_scenes >= num_bounds - 1) {
-            scene_bounds = realloc(scene_bounds, (num_bounds * 2) * sizeof(ComplexBounds *));
-            num_bounds *= 2;
-        }
-
-        max_img_incr *= SCALE_FACTOR;
-        min_img_incr *= SCALE_FACTOR;
-        max_real_incr *= SCALE_FACTOR;
-        min_real_incr *= SCALE_FACTOR;
-    }
-    scene->scenes = scene_bounds;
-
-    uint32_t ***image_scenes = (uint32_t***) calloc(scene->num_scenes, sizeof(uint32_t**));
-    scene->image_scenes = image_scenes;
+    scene->bounds = start;
 
     return scene;
 }
@@ -144,7 +82,6 @@ void add_pixel(int x, int y, ComplexBounds* scene_bounds, ComplexNumber* c, uint
     image_pixels[x][y] = color;
 }
 
-#define NUM_CHUNKS 24 
 
 typedef struct {
     uint32_t** image_pixels;
@@ -171,7 +108,7 @@ void* calculate_chunk(void* d) {
    get_chunk_bounds(WIDTH, HEIGHT, NUM_CHUNKS, data->x_chunk, data->y_chunk, &x_min, &y_min, &x_max, &y_max);
    for (int x = x_min; x < x_max; x++) {
        for (int y = y_min; y < y_max; y++) {
-           add_pixel(x, y, data->scene->scenes[0], data->scene->c, data->image_pixels);
+           add_pixel(x, y, data->scene->bounds, data->scene->c, data->image_pixels);
        }
    }
 
@@ -190,7 +127,6 @@ void run_chunk(pthread_t* tid, uint32_t** ip, int x_chunk, int y_chunk, ComplexS
 
 void calculate_pixels(ComplexScene* scene, uint32_t*** ip) {
     uint32_t ** image_pixels = *(ip);
-//    ComplexBounds *scene_bounds = scene->scenes[i];
     pthread_t tid[NUM_CHUNKS * NUM_CHUNKS];
     int k = 0;
     for (int x_chunk = 0; x_chunk < NUM_CHUNKS; x_chunk++) {
@@ -244,11 +180,34 @@ void show_julia_start(ComplexScene* scene) {
     uint32_t** image_pixels = create_image_pixels_arr(WIDTH, HEIGHT);
     while (!quit) {
         if (change) {
-            //fprintf(stderr, "%f + %fi\n", scene->c->x, scene->c->y);
+            start_timer();
             calculate_pixels(scene, &image_pixels);
+            char data[100];
+            //sprintf(data, "(%.10f, %.10f)U(%.10f, %.10f)", scene->bounds->min_real, scene->bounds->max_real, scene->bounds->min_img, scene->bounds->max_img);
+            sprintf(data, "(%.10f, %.10f)", scene->c->x, scene->c->y);
+            stop_timer_message(data);
             display_image(image_pixels);    
             change = 0;
         }
        wait_event(scene->c, &change, &quit); 
     }
+}
+
+#define NUM_ITERATIONS 30 //Central Limit Theorem
+#define NUM_MOVEMENTS 20
+
+void performance_test(ComplexScene* scene) {
+    uint32_t** image_pixels = create_image_pixels_arr(WIDTH, HEIGHT);
+    for (int j = 0; j <  NUM_ITERATIONS; j++) {
+        init_timer(j);
+        for (int i = 0; i < NUM_MOVEMENTS; i++) {
+            start_timer();
+            calculate_pixels(scene, &image_pixels);
+            char data[100];
+            sprintf(data, "(%.10f, %.10f)", scene->c->x, scene->c->y);
+            stop_timer_message(data);
+            scene->c->x -= 1;
+        }
+    }
+    
 }

@@ -17,9 +17,7 @@ typedef struct {
 
 typedef struct {
     ComplexNumber *c;
-    ComplexBounds **scenes;
-    uint32_t*** image_scenes;
-    int num_scenes;
+    ComplexBounds *bounds;
 } ComplexScene;
 
 
