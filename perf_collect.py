@@ -18,7 +18,7 @@ def parse_file(file_path):
     return data
 
 # Directory containing the files
-directory = 'perf2'
+directory = 'perf'
 
 # Dictionary to hold the averaged data
 average_times = defaultdict(lambda: defaultdict(list))

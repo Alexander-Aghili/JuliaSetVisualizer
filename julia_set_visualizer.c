@@ -31,7 +31,7 @@ static int num_print, num_chunks;
 int main(int argc, char** argv) {
     argparser(argc, argv, &num_print, &num_chunks);
 
-//    start_sdl();
+    start_sdl();
     initialize_color_map();
     ComplexNumber* c = create_complex_number(0, 0);
     ComplexScene *scene = create_complex_scene(c, NULL);
@@ -185,12 +185,8 @@ void show_julia_start(ComplexScene* scene) {
     uint32_t** image_pixels = create_image_pixels_arr(WIDTH, HEIGHT);
     while (!quit) {
         if (change) {
-            start_timer();
             calculate_pixels(scene, &image_pixels);
-            char data[100];
             //sprintf(data, "(%.10f, %.10f)U(%.10f, %.10f)", scene->bounds->min_real, scene->bounds->max_real, scene->bounds->min_img, scene->bounds->max_img);
-            sprintf(data, "(%.10f, %.10f)", scene->c->x, scene->c->y);
-            stop_timer_message(data);
             display_image(image_pixels);    
             change = 0;
         }
