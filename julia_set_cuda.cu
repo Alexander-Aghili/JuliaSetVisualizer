@@ -1,26 +1,8 @@
 #include <cuda_runtime.h>
-#include <stdio.h>
 #include <stdint.h>
-#include <stdlib.h>
 #include <math.h>
+#include "julia_set_cuda.h"
 
-#define WIDTH 1024
-#define HEIGHT 768
-#define MAX_ITERATIONS 1000
-#define THRESHOLD 4.0
-#define THREADS_PER_BLOCK 16
-
-struct ComplexBounds {
-    double min_real;
-    double max_real;
-    double min_img;
-    double max_img;
-};
-
-struct ComplexNumber {
-    double x;
-    double y;
-};
 
 __device__ uint32_t color_map[16] = {0x000000, 0x1F1F1F, 0x3F3F3F, 0x5F5F5F, 0x7F7F7F, 0x9F9F9F, 0xBFBFBF, 0xDFDFDF,
                                      0xFF0000, 0xFF7F00, 0xFFFF00, 0x00FF00, 0x0000FF, 0x4B0082, 0x8F00FF, 0xFFFFFF};

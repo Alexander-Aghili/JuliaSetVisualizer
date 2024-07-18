@@ -1,0 +1,48 @@
+# Compiler for CUDA files
+NVCC = nvcc
+
+# Compiler for C files
+CC = gcc
+
+# Compilation flags
+NVCC_FLAGS = -std=c++11
+CFLAGS = -Wall -Wextra
+
+# Target executable
+TARGET = julia_set_cuda
+
+# Object files
+OBJ = main.o perf_man.o julia_set_cuda.o
+
+# CUDA source files
+CUDA_SRC = julia_set_cuda.cu
+
+# C source files
+C_SRC = main.c perf_man.c
+
+# Header files
+HEADERS = julia_set_cuda.h perf_man.h
+
+# Rule to build the target executable
+all: $(TARGET)
+
+# Rule to build the CUDA object file
+julia_set_cuda.o: mandelbrot.cu $(HEADERS)
+	$(NVCC) $(NVCC_FLAGS) -c -o $@ $<
+
+# Rule to build the C object files
+main.o: main.c $(HEADERS)
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+perf_man.o: perf_man.c $(HEADERS)
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+# Rule to link all object files into the target executable
+$(TARGET): $(OBJ)
+	$(NVCC) -o $@ $(OBJ)
+
+# Rule to clean up the build directory
+clean:
+	rm -f $(OBJ) $(TARGET) performance*.log
+
+.PHONY: all clean
