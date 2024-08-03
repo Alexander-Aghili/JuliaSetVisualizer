@@ -1,7 +1,13 @@
 #include <cuda_runtime.h>
 #include <stdint.h>
 #include <math.h>
+#include <stdio.h>
 #include "julia_set_cuda.h"
+
+extern "C" {
+    #include "perf_man.h"
+    #include "complex.h"
+}
 
 
 __device__ uint32_t color_map[16] = {0x000000, 0x1F1F1F, 0x3F3F3F, 0x5F5F5F, 0x7F7F7F, 0x9F9F9F, 0xBFBFBF, 0xDFDFDF,
@@ -66,13 +72,24 @@ uint32_t* create_image_pixels_arr(int x, int y) {
     return image_pixels;
 }
 
+#define NUM_MOVEMENTS 20
+
 int main() {
-    ComplexBounds scene_bounds = { -2.0, 1.0, -1.5, 1.5 };
-    ComplexNumber c = { -0.7, 0.27015 };
+    ComplexBounds scene_bounds = { 1.5, 2, -2.5, -2 };
+    ComplexNumber c = { 0, 0 };
 
     uint32_t* image_pixels = create_image_pixels_arr(WIDTH, HEIGHT);
 
-    add_pixel(&scene_bounds, &c, image_pixels);
+
+    init_timer(1, 20);
+    for (int i = 0; i < NUM_MOVEMENTS; i++) {
+        char data[100];
+        sprintf(data, "(%.10f, %.10f)", (&c)->x, (&c)->y);
+        start_timer();
+        add_pixel(&scene_bounds, &c, image_pixels);
+        stop_timer_message(data);
+        (&c)->x -= .01;
+    }
 
     cudaFree(image_pixels);
     return 0;

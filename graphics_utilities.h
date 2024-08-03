@@ -3,7 +3,7 @@
 #include "constants.h"
 #include "inttypes.h"
 #include "color_utilities.h"
-#include <gd.h>
+//#include <gd.h>
 #include <SDL2/SDL.h>
 #include <assert.h>
 
@@ -15,4 +15,4 @@ void display_image(uint32_t** image_pixels);
 void scene_complete();
 
 
-void create_image(int f, uint32_t image_pixels[WIDTH][HEIGHT]);
+//void create_image(int f, uint32_t image_pixels[WIDTH][HEIGHT]);

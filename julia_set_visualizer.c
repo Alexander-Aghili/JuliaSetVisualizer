@@ -1,6 +1,5 @@
 #include <SDL2/SDL_events.h>
 #include <SDL2/SDL_render.h>
-#include <linux/limits.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <sys/types.h>
@@ -31,7 +30,7 @@ static int num_print, num_chunks;
 int main(int argc, char** argv) {
     argparser(argc, argv, &num_print, &num_chunks);
 
-    start_sdl();
+    //start_sdl();
     initialize_color_map();
     ComplexNumber* c = create_complex_number(0, 0);
     ComplexScene *scene = create_complex_scene(c, NULL);
@@ -40,9 +39,6 @@ int main(int argc, char** argv) {
     performance_test(scene);
 }
 
-void wait() {
-   sleep(WAIT); 
-}
 
 ComplexScene *create_complex_scene(ComplexNumber *c, ComplexBounds *start) {
     ComplexScene *scene = (ComplexScene *) calloc(1, sizeof(ComplexScene));

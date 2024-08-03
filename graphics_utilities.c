@@ -38,7 +38,7 @@ void scene_complete() {
     SDL_Quit();
 }
 
-
+/*
 void create_image(int f, uint32_t image_pixels[WIDTH][HEIGHT]) {
     gdImagePtr im = gdImageCreateTrueColor(WIDTH, HEIGHT);
     for (int x = 0; x < WIDTH; x++) {
@@ -55,4 +55,4 @@ void create_image(int f, uint32_t image_pixels[WIDTH][HEIGHT]) {
     fclose(img);
 
     gdImageDestroy(im);
-}
+}*/

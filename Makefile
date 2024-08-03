@@ -1,6 +1,6 @@
 CC=clang
 CFLAGS   = -Wall -Wpedantic -Werror -Wextra -DDEBUG
-LDFLAGS=-lgd -lpng -lz -ljpeg -lfreetype -lm -lSDL2
+LDFLAGS=-lpng -lz -ljpeg -lfreetype -lm -lSDL2
 
 SRCS=$(wildcard *.c)
 OBJS=$(SRCS:.c=.o)
