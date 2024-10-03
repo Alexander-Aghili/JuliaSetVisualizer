@@ -2,7 +2,6 @@
 
 #include "constants.h"
 #include "inttypes.h"
-#include "color_utilities.h"
 //#include <gd.h>
 #include <SDL2/SDL.h>
 #include <assert.h>
@@ -11,7 +10,7 @@
 #define SUFFIX     4
 
 void start_sdl();
-void display_image(uint32_t** image_pixels);
+void display_image(uint32_t* image_pixels);
 void scene_complete();
 
 

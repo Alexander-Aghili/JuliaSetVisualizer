@@ -14,10 +14,22 @@ void start_sdl() {
     SDL_RenderClear(renderer);
 }
 
-void display_image(uint32_t** image_pixels) {
+uint8_t red(uint32_t color) {
+    return (uint8_t) ((color >> 16) & 0x000000FF);
+}
+
+uint8_t green(uint32_t color) {
+    return (uint8_t) ((color >> 8) & 0x000000FF);
+}
+
+uint8_t blue(uint32_t color) {
+    return (uint8_t) (color & 0x000000FF);
+}
+
+void display_image(uint32_t* image_pixels) {
     for (int x = 0; x < WIDTH; x++) {
         for (int y = 0; y < HEIGHT; y++) {
-            uint32_t color = image_pixels[x][y];
+            uint32_t color = image_pixels[y * WIDTH + x];
             SDL_SetRenderDrawColor(renderer, red(color), green(color), blue(color), 255);
             SDL_RenderDrawPoint(renderer, x, y);
         }

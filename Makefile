@@ -1,26 +1,36 @@
-CC=clang
-CFLAGS   = -Wall -Wpedantic -Werror -Wextra -DDEBUG
-LDFLAGS=-lpng -lz -ljpeg -lfreetype -lm -lSDL2
+# Compiler and flags
+NVCC = nvcc
+GCC = gcc
 
-SRCS=$(wildcard *.c)
-OBJS=$(SRCS:.c=.o)
-EXEC=julia_set_visualizer
+FLAGS=-lSDL2
 
-.PHONY: all clean format
+# Object files
+CU_OBJS = julia_set_cuda.o
+C_OBJS = perf_man.o complex.o graphics_utilities.o
 
-all: $(EXEC)
+# Target executable
+TARGET = julia_set_cuda
 
-$(EXEC): $(OBJS)
-	$(CC) $(CFLAGS) $^ -o $@ $(LDFLAGS)
+# All object files
+OBJS = $(CU_OBJS) $(C_OBJS)
 
+# Default target
+all: $(TARGET)
+
+# Rule to build the target executable
+$(TARGET): $(OBJS)
+	$(NVCC) $(FLAGS) -o $@ $^
+
+# Rule to compile CUDA source files
+%.o: %.cu
+	$(NVCC) -c -o $@ $<
+
+# Rule to compile C source files
 %.o: %.c
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(GCC) -c -o $@ $<
 
+# Rule to clean up the build directory
 clean:
-	rm -rf $(EXEC) $(OBJS) *.mp4 ./media/ __pycache__/
+	rm -f $(OBJS) $(TARGET) performance*.log
 
-video:
-	ffmpeg -framerate 30 -i %d.png -c:v libx264 -r 30 output.mp4
-
-format:
-	clang-format -i *.c *.h
+.PHONY: all clean

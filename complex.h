@@ -21,4 +21,4 @@ typedef struct {
 } ComplexScene;
 
 
-ComplexNumber* create_complex_number(double x, double y);
+//ComplexNumber* create_complex_number(double x, double y);
