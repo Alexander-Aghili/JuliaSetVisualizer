@@ -2,7 +2,7 @@
 NVCC = nvcc
 GCC = gcc
 
-FLAGS=-lSDL2
+FLAGS=-lSDL2 -lm
 
 # Object files
 CU_OBJS = julia_set_cuda.o

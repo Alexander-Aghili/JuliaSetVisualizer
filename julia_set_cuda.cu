@@ -1,9 +1,8 @@
 #include <cuda_runtime.h>
 #include <stdint.h>
 #include <math.h>
-#include <stdio.h>
+#include <stdio.h> 
 #include "julia_set_cuda.h"
-
 extern "C" {
     #include "perf_man.h"
     #include "complex.h"
@@ -123,9 +122,19 @@ ComplexScene *create_complex_scene(ComplexNumber *c, ComplexBounds *start) {
     return scene;
 }
 
+void zoom(ComplexBounds* bounds, double scaling_factor) {
+    double real_center = (bounds->max_real + bounds->min_real)/2;
+    double img_center = (bounds->max_img + bounds->min_img)/2;
+    bounds->max_real = real_center + scaling_factor * (bounds->max_real - real_center);
+    bounds->min_real = real_center + scaling_factor * (bounds->min_real - real_center);
+    bounds->max_img = img_center + scaling_factor * (bounds->max_img - img_center);
+    bounds->min_img = img_center + scaling_factor * (bounds->min_img - img_center);
+}
 
-void wait_event(ComplexNumber *c, int* change, int* quit) {
+void wait_event(ComplexScene *scene, int* change, int* quit) {
     SDL_Event event;
+    ComplexNumber* c = scene->c;
+    ComplexBounds* bounds = scene->bounds;
     struct timeval init;
         gettimeofday(&init,NULL);
         signed long init_time = 1000000 * init.tv_sec + init.tv_usec; 
@@ -145,13 +154,43 @@ void wait_event(ComplexNumber *c, int* change, int* quit) {
             } else if (event.key.keysym.sym == SDLK_DOWN) {
                 c->y -= 0.01;
                 *change = 1;
+            } else if (event.button.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_LEFT) {
+                int x1, y1, x2, y2;
+                SDL_GetMouseState(&x1, &y1);
+
+                SDL_Event mouse_up;
+                mouse_up.button.type = SDL_MOUSEBUTTONUP;
+                while (SDL_WaitEvent(&mouse_up)) {
+                    if (mouse_up.button.type == SDL_MOUSEBUTTONUP) {
+                        break;
+                    }
+                }
+
+                SDL_GetMouseState(&x2, &y2);
+
+                double xdiff = (double)(x1 - x2)/(sqrt((double)(x1*x1)+(double)(x2*x2)));
+                double ydiff = (double)(y1 - y2)/(sqrt((double)(y1*y1)+(double)(y2*y2)));
+               
+                bounds->max_real += xdiff;
+                bounds->min_real += xdiff;
+                bounds->max_img += ydiff;
+                bounds->min_img += ydiff;
+                *change = 1;
+            } else if (event.key.keysym.sym == SDLK_EQUALS) {
+                zoom(bounds, 0.9);
+                *change = 1;
+            } else if (event.key.keysym.sym == SDLK_MINUS) {
+               zoom(bounds, 1.1); 
+               *change = 1;
             }
+/*            
             struct timeval curr;
             gettimeofday(&curr,NULL);
             signed long curr_time = 1000000 * curr.tv_sec + curr.tv_usec; 
             if (curr_time-init_time >= 500) {
                break;
             }
+*/
         }
 }
 
@@ -166,6 +205,6 @@ void show_julia_start(ComplexScene* scene) {
             display_image(image_pixels);    
             change = 0;
         }
-       wait_event(scene->c, &change, &quit); 
+       wait_event(scene, &change, &quit); 
     }
 }
