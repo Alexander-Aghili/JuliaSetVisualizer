@@ -2,7 +2,9 @@
 #include <stdint.h>
 #include <math.h>
 #include <stdio.h> 
+#include <unistd.h>
 #include "julia_set_cuda.h"
+
 extern "C" {
     #include "perf_man.h"
     #include "complex.h"
@@ -102,6 +104,17 @@ int main(int argc, char** argv) {
     show_julia_start(scene);
 }
 
+ComplexBounds* get_start_bounds() {
+    ComplexBounds* start = (ComplexBounds*) calloc(1, sizeof(ComplexBounds));
+    assert(start != NULL);
+    start->max_img = DEFAULT_START_MAX_IMG;
+    start->min_img = DEFAULT_START_MIN_IMG;
+    start->max_real = DEFAULT_START_MAX_REAL;
+    start->min_real = DEFAULT_START_MIN_REAL;
+    return start;
+
+}
+
 ComplexScene *create_complex_scene(ComplexNumber *c, ComplexBounds *start) {
     ComplexScene *scene = (ComplexScene *) calloc(1, sizeof(ComplexScene));
     assert(scene != NULL);
@@ -109,12 +122,7 @@ ComplexScene *create_complex_scene(ComplexNumber *c, ComplexBounds *start) {
 
 
     if (start == NULL) {
-        start = (ComplexBounds*) calloc(1, sizeof(ComplexBounds));
-        assert(start != NULL);
-        start->max_img = DEFAULT_START_MAX_IMG;
-        start->min_img = DEFAULT_START_MIN_IMG;
-        start->max_real = DEFAULT_START_MAX_REAL;
-        start->min_real = DEFAULT_START_MIN_REAL;
+        start = get_start_bounds();
     }
 
     scene->bounds = start;
@@ -131,68 +139,76 @@ void zoom(ComplexBounds* bounds, double scaling_factor) {
     bounds->min_img = img_center + scaling_factor * (bounds->min_img - img_center);
 }
 
-void wait_event(ComplexScene *scene, int* change, int* quit) {
+int wait_event(ComplexScene *scene, int* change, int* quit) {
     SDL_Event event;
     ComplexNumber* c = scene->c;
     ComplexBounds* bounds = scene->bounds;
+    int ret = 0;
     struct timeval init;
-        gettimeofday(&init,NULL);
-        signed long init_time = 1000000 * init.tv_sec + init.tv_usec; 
-        while (SDL_PollEvent(&event)) {
-            if (event.type == SDL_QUIT) {
-                *quit = 1;
-                break;
-            } else if (event.key.keysym.sym == SDLK_LEFT) {
-                c->x -= 0.01;
-                *change = 1;
-            } else if (event.key.keysym.sym == SDLK_RIGHT) {
-                c->x += 0.01;
-                *change = 1;
-            } else if (event.key.keysym.sym == SDLK_UP) {
-                c->y += 0.01;
-                *change = 1;
-            } else if (event.key.keysym.sym == SDLK_DOWN) {
-                c->y -= 0.01;
-                *change = 1;
-            } else if (event.button.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_LEFT) {
-                int x1, y1, x2, y2;
-                SDL_GetMouseState(&x1, &y1);
+    gettimeofday(&init,NULL);
+    signed long init_time = 1000000 * init.tv_sec + init.tv_usec; 
+    double move_amount = 0.005;
+    while (SDL_PollEvent(&event)) {
+        if (event.type == SDL_QUIT) {
+            *quit = 1;
+            break;
+        } else if (event.key.keysym.sym == SDLK_LEFT) {
+            c->x -= move_amount;
+            *change = 1;
+        } else if (event.key.keysym.sym == SDLK_RIGHT) {
+            c->x += move_amount;
+            *change = 1;
+        } else if (event.key.keysym.sym == SDLK_UP) {
+            c->y += move_amount;
+            *change = 1;
+        } else if (event.key.keysym.sym == SDLK_DOWN) {
+            c->y -= move_amount;
+            *change = 1;
+        } else if (event.button.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_LEFT) {
+            int x1, y1, x2, y2;
+            SDL_GetMouseState(&x1, &y1);
 
-                SDL_Event mouse_up;
-                mouse_up.button.type = SDL_MOUSEBUTTONUP;
-                while (SDL_WaitEvent(&mouse_up)) {
-                    if (mouse_up.button.type == SDL_MOUSEBUTTONUP) {
-                        break;
-                    }
+            SDL_Event mouse_up;
+            mouse_up.button.type = SDL_MOUSEBUTTONUP;
+            while (SDL_WaitEvent(&mouse_up)) {
+                if (mouse_up.button.type == SDL_MOUSEBUTTONUP) {
+                    break;
                 }
-
-                SDL_GetMouseState(&x2, &y2);
-
-                double xdiff = (double)(x1 - x2)/(sqrt((double)(x1*x1)+(double)(x2*x2)));
-                double ydiff = (double)(y1 - y2)/(sqrt((double)(y1*y1)+(double)(y2*y2)));
-               
-                bounds->max_real += xdiff;
-                bounds->min_real += xdiff;
-                bounds->max_img += ydiff;
-                bounds->min_img += ydiff;
-                *change = 1;
-            } else if (event.key.keysym.sym == SDLK_EQUALS) {
-                zoom(bounds, 0.9);
-                *change = 1;
-            } else if (event.key.keysym.sym == SDLK_MINUS) {
-               zoom(bounds, 1.1); 
-               *change = 1;
             }
-/*            
-            struct timeval curr;
-            gettimeofday(&curr,NULL);
-            signed long curr_time = 1000000 * curr.tv_sec + curr.tv_usec; 
-            if (curr_time-init_time >= 500) {
-               break;
-            }
-*/
+
+            SDL_GetMouseState(&x2, &y2);
+
+            double xdiff = ((double)(x1 - x2)/(sqrt((double)(x1*x1)+(double)(x2*x2))))*((bounds->max_real-bounds->min_real)/**(bounds->max_img-bounds->min_img)*/);
+            double ydiff = ((double)(y1 - y2)/(sqrt((double)(y1*y1)+(double)(y2*y2))))*((bounds->max_real-bounds->min_real)/**(bounds->max_img-bounds->min_img)*/);
+
+            bounds->max_real += xdiff;
+            bounds->min_real += xdiff;
+            bounds->max_img += ydiff;
+            bounds->min_img += ydiff;
+            *change = 1;
+        } else if (event.key.keysym.sym == SDLK_EQUALS) {
+            zoom(bounds, 0.9);
+            *change = 1;
+        } else if (event.key.keysym.sym == SDLK_MINUS) {
+            zoom(bounds, 1.1);
+            *change = 1;
+        } else if (event.key.keysym.sym == SDLK_RETURN) {
+            printf("(%f, %f, %f, %f)\n", bounds->max_real, bounds->min_real, bounds->max_img, bounds->min_img);
+            ret = 1;
         }
+        /*            
+                      struct timeval curr;
+                      gettimeofday(&curr,NULL);
+                      signed long curr_time = 1000000 * curr.tv_sec + curr.tv_usec; 
+                      if (curr_time-init_time >= 500) {
+                      break;
+                      }
+         */
+    }
+    return ret;
 }
+
+void zoom_display(ComplexScene* scene);
 
 void show_julia_start(ComplexScene* scene) {
     int quit = 0;
@@ -205,6 +221,61 @@ void show_julia_start(ComplexScene* scene) {
             display_image(image_pixels);    
             change = 0;
         }
-       wait_event(scene, &change, &quit); 
+       int ret = wait_event(scene, &change, &quit); 
+       if (ret == 1) {
+           //Zoom 
+           zoom_display(scene);
+       }
     }
+}
+
+void zoom_display(ComplexScene* scene) {
+    ComplexBounds* start = get_start_bounds(); 
+    ComplexBounds* end = scene->bounds;
+
+    int frames = 10;
+    double max_img_incr = (end->max_img - start->max_img) / frames;
+    double min_img_incr = (end->min_img - start->min_img) / frames;
+    double max_real_incr = (end->max_real - start->max_real) / frames;
+    double min_real_incr = (end->min_real - start->min_real) / frames;
+
+    double curr_max_img = start->max_img;
+    double curr_min_img = start->min_img;
+    double curr_max_real = start->max_real;
+    double curr_min_real = start->min_real;
+
+    uint32_t** image_list = (uint32_t**) calloc(1000, sizeof(uint32_t*));
+    
+    int i = 0;
+    while (fabs(curr_max_img - end->max_img) > EPSILON
+           || fabs(curr_max_real - end->max_real) > EPSILON
+           || fabs(curr_min_img - end->min_img) > EPSILON
+           || fabs(curr_min_real - end->min_real) > EPSILON) {
+        
+        uint32_t* image_pixels = create_image_pixels_arr(WIDTH, HEIGHT);
+        image_list[i++] = image_pixels;
+
+        add_pixel(start, scene->c, image_pixels);
+
+        curr_max_img += max_img_incr;
+        curr_min_img += min_img_incr;
+        curr_max_real += max_real_incr;
+        curr_min_real += min_real_incr;
+
+        start->max_img = curr_max_img;
+        start->min_img = curr_min_img;
+        start->max_real = curr_max_real;
+        start->min_real = curr_min_real;
+           
+        max_img_incr *= SCALE_FACTOR;
+        min_img_incr *= SCALE_FACTOR;
+        max_real_incr *= SCALE_FACTOR;
+        min_real_incr *= SCALE_FACTOR;
+    }
+
+    for (int k = 0; k < i; k++) {
+        display_image(image_list[k]);
+        usleep(100);
+    }
+
 }
