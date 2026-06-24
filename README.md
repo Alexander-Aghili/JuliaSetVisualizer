@@ -50,25 +50,3 @@ The **Julia Set Visualizer** is a high-performance tool for exploring Julia set 
 - **Zoom:** `+` to zoom in, `-` to zoom out.
 
 
-## Performance Tips
-
-- Update your GPU drivers and CUDA toolkit for the best performance.
-- Experiment with CUDA kernel configurations for optimal results on your hardware.
-
-## Contributing
-
-Contributions are welcome! Fork the repository and submit pull requests for code improvements, new features, or documentation enhancements.
-
-## License
-
-Licensed under the MIT License. See the `LICENSE` file for details.
-
-## Acknowledgements
-
-- [SDL2](https://www.libsdl.org/) for graphical rendering.
-- NVIDIA's CUDA Toolkit for parallel computing.
-
----
-
-Enjoy exploring the world of Julia fractals! 
-
